@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>National Weather Dashboard – Prototype v0.1</title>
+<style>
+:root{--bg:#eef3f4;--card:#fff;--ink:#14303f;--mute:#5b707b;--line:#d6e0e4;--teal:#0a7c7c;--tealbg:#dff1f0;--amber:#b8680a;--amberbg:#fbeedb;--red:#b3402f;--redbg:#f9e3df;--blue:#2f5f9e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a20;--card:#15262e;--ink:#e3eef2;--mute:#9bb0b9;--line:#263d47;--teal:#3cc2bd;--tealbg:#12363a;--amber:#f0a649;--amberbg:#3a2a12;--red:#ef7f6c;--redbg:#3d1d18;--blue:#7fb0ee;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1a20;--card:#15262e;--ink:#e3eef2;--mute:#9bb0b9;--line:#263d47;--teal:#3cc2bd;--tealbg:#12363a;--amber:#f0a649;--amberbg:#3a2a12;--red:#ef7f6c;--redbg:#3d1d18;--blue:#7fb0ee;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 110px}
+header{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+h1{margin:0;font-size:1.55rem;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:2px 0 0}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 11px;font-size:.78rem;color:var(--mute)}
+.tag.warn{background:var(--amberbg);color:var(--amber);border-color:transparent}
+.steps{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px}
+button:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:600}
+:root[data-theme="dark"] button.primary{color:#06201f}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) button.primary{color:#06201f}}
+button.done{border-color:var(--teal);color:var(--teal)}
+.grid{display:grid;grid-template-columns:1.75fr 1fr;gap:14px}
+@media(max-width:880px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.card h2{margin:0 0 10px;font-size:1rem}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi b{display:block;font-size:1.6rem;line-height:1.1}
+.kpi span{color:var(--mute);font-size:.8rem}
+.kpi.dup b{color:var(--amber)}.kpi.bad b{color:var(--red)}.kpi.ok b{color:var(--teal)}
+.bars{display:grid;gap:6px;margin-bottom:12px}
+.bar{display:grid;grid-template-columns:104px 1fr 30px;gap:8px;align-items:center;font-size:.85rem;background:none;border:0;padding:2px 0;text-align:left;width:100%}
+.bar i{display:block;height:14px;border-radius:4px;background:var(--teal);min-width:2px;transition:width .5s}
+.bar.on span:first-child{font-weight:700}
+.bar.on i{background:var(--blue)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+select{font:inherit;padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.tw{overflow-x:auto;max-height:300px;overflow-y:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.84rem;min-width:520px}
+th,td{padding:6px 9px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{position:sticky;top:0;background:var(--tealbg);color:var(--ink);z-index:1}
+tr.flag td{background:var(--amberbg)}
+.chip{display:inline-block;border-radius:999px;padding:1px 9px;font-size:.76rem;background:var(--tealbg);color:var(--teal)}
+.chip.n{background:var(--line);color:var(--mute)}
+.empty{color:var(--mute);padding:26px 8px;text-align:center}
+.q{display:grid;gap:8px;max-height:560px;overflow-y:auto}
+.qi{border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:.84rem}
+.qi.pending{border-left:4px solid var(--amber)}
+.qi.removed{border-left:4px solid var(--teal);opacity:.75}
+.qi.restored{border-left:4px solid var(--blue);opacity:.75}
+.qi .w{color:var(--red);font-weight:600}
+.qi .a{display:flex;gap:6px;margin-top:6px}
+.qi button{padding:4px 10px;font-size:.8rem}
+.note{color:var(--mute);font-size:.8rem;margin-top:10px}
+#cap{position:fixed;left:0;right:0;bottom:0;background:#14303f;color:#fff;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));font-size:1.02rem;text-align:center;display:none;z-index:5}
+#cap.on{display:block}
+@media(prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div>
+  <h1>National Weather Dashboard</h1>
+  <p class="sub">Verify, de-duplicate and classify multi-source weather reports. Team Dev-orbit.</p>
+ </div>
+ <div class="tags"><span class="tag warn">Sample / mock data</span><span class="tag">Prototype v0.1</span><span class="tag">Rule-based, no ML</span></div>
+</header>
+
+<div class="steps">
+ <button id="b1" class="primary">1. Load sample dataset</button>
+ <button id="b2" disabled>2. Run processing</button>
+ <button id="bauto">▶ Auto-run 2-min demo</button>
+ <button id="bstop" hidden>■ Stop</button>
+ <button id="breset">Reset</button>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="grid">
+ <section class="card">
+  <h2 id="th">Weather records</h2>
+  <div id="viz"></div>
+  <div class="filters" id="flt" hidden>
+   <label for="st">State</label><select id="st"></select>
+   <span class="note" id="cnt" style="margin:0"></span>
+  </div>
+  <div class="tw"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  <div class="empty" id="empty">Load the sample dataset to begin.</div>
+ </section>
+ <aside class="card" id="qcard">
+  <h2>Admin review queue</h2>
+  <div class="q" id="q"><div class="empty">Nothing flagged yet. Run processing first.</div></div>
+  <p class="note">Flagged records are held for a person to approve or override. Nothing is silently deleted.</p>
+ </aside>
+</div>
+<p class="note">Pipeline: raw report → verify + de-duplicate + classify → filtered dashboard → admin review. Supports analysis only and does not replace official forecasts or emergency decisions. The manual baseline and the 20-case test are not run yet, so no accuracy claim is made here.</p>
+</div>
+<div id="cap" role="status" aria-live="polite"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+const ST=[["Chennai","Tamil Nadu"],["Coimbatore","Tamil Nadu"],["Mumbai","Maharashtra"],["Delhi","Delhi"],["Kolkata","West Bengal"],["Guwahati","Assam"],["Jaipur","Rajasthan"],["Patna","Bihar"],["Kochi","Kerala"],["Bengaluru","Karnataka"],["Bhubaneswar","Odisha"],["Nagpur","Maharashtra"]];
+const M={temp:{u:"°C",min:-10,max:55},rain:{u:"mm",min:0,max:1000},wind:{u:"km/h",min:0,max:250},river:{u:"m",min:0,max:30},bolt:{u:"strikes",min:0,max:500}};
+const G={temp:()=>+(30+rnd()*14).toFixed(1),rain:()=>Math.round(rnd()*140),wind:()=>Math.round(15+rnd()*60),river:()=>+(1+rnd()*5).toFixed(1),bolt:()=>Math.round(rnd()*45)};
+const KEYS=Object.keys(M);
+const TYPES=["Rainfall","Thunderstorm","Flood","Heatwave","Strong wind","Normal"];
+const cls=r=>r.metric=="rain"&&r.value>=64.5?"Rainfall":r.metric=="bolt"&&r.value>=20?"Thunderstorm":r.metric=="river"&&r.value>=5?"Flood":r.metric=="temp"&&r.value>=40?"Heatwave":r.metric=="wind"&&r.value>=50?"Strong wind":"Normal";
+let raw=[],clean=[],queue=[],stage=0,ms=null,ft="All",fs="All",token=0;
+
+function build(){
+ seed=11;const b=[];
+ for(let i=0;i<48;i++){const s=ST[Math.floor(rnd()*ST.length)],m=KEYS[i%5];
+  b.push({station:s[0],state:s[1],date:"2026-10-"+String(15+Math.floor(rnd()*12)),metric:m,value:G[m](),source:"Feed "+"ABC"[i%3]});}
+ const out=b.slice();
+ [3,9,14,20,27,33,38,44].forEach((k,j)=>out.push({...b[k],source:"Feed "+"ABC"[(k+1+j)%3]}));
+ out.push({station:"Kochi",state:"Kerala",date:"2026-10-19",metric:"temp",value:87.2,source:"Feed B"},
+  {station:"Patna",state:"Bihar",date:"",metric:"rain",value:40,source:"Feed A"},
+  {station:"Jaipur",state:"Rajasthan",date:"2026-10-22",metric:"wind",value:null,source:"Feed C"},
+  {station:"Delhi",state:"Delhi",date:"2026-10-21",metric:"rain",value:-12,source:"Feed A"},
+  {station:"Mumbai",state:"Maharashtra",date:"2026-10-20",metric:"wind",value:999,source:"Feed B"},
+  {station:"",state:"Assam",date:"2026-10-24",metric:"river",value:3.2,source:"Feed C"});
+ raw=out.map(r=>[rnd(),r]).sort((a,b)=>a[0]-b[0]).map((x,i)=>({id:i+1,...x[1]}));
+}
+function why(r){
+ if(!r.station)return"missing station";if(!r.date)return"missing date";
+ if(r.value==null||isNaN(r.value))return"missing value";
+ const m=M[r.metric];if(r.value<m.min||r.value>m.max)return"value "+r.value+" "+m.u+" outside "+m.min+"–"+m.max;return null;
+}
+function load(){build();stage=1;clean=[];queue=[];ms=null;ft="All";fs="All";render()}
+function runPipe(){
+ if(stage<1)return;
+ const t0=performance.now(),seen=new Map();clean=[];queue=[];
+ raw.forEach(r=>{
+  const w=why(r);
+  if(w){queue.push({r,why:"Invalid: "+w,kind:"bad",st:"pending"});return}
+  const k=[r.station,r.date,r.metric,r.value].join("|");
+  if(seen.has(k)){queue.push({r,why:"Duplicate of #"+seen.get(k),kind:"dup",st:"pending"});return}
+  seen.set(k,r.id);clean.push({...r,ev:cls(r)});
+ });
+ ms=performance.now()-t0;stage=2;ft="All";fs="All";render();
+}
+function reset(){stage=0;raw=[];clean=[];queue=[];ms=null;ft="All";fs="All";render()}
+function setType(t){ft=t;render()}
+function setState(s){fs=s;render()}
+function act(i,a){
+ const q=queue[i];if(!q||q.st!="pending")return;
+ if(a=="ok")q.st="removed";
+ else{q.st="restored";clean.push({...q.r,ev:cls(q.r),manual:true})}
+ render();
+}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function kpi(n,l,c){return '<div class="kpi '+(c||"")+'"><b>'+n+'</b><span>'+l+'</span></div>'}
+function render(){
+ $("#b1").classList.toggle("done",stage>=1);$("#b2").disabled=stage<1;$("#b2").classList.toggle("done",stage>=2);
+ $("#b2").classList.toggle("primary",stage==1);$("#b1").classList.toggle("primary",stage==0);
+ const nd=queue.filter(x=>x.kind=="dup").length,nb=queue.filter(x=>x.kind=="bad").length,pend=queue.filter(x=>x.st=="pending").length;
+ $("#kpis").innerHTML=stage==0?"":kpi(raw.length,"raw records")+(stage<2?"":kpi(clean.length,"clean records","ok")+kpi(nd,"duplicates flagged","dup")+kpi(nb,"invalid flagged","bad")+kpi(pend,"awaiting review")+kpi(ms.toFixed(2)+" ms","processing time (logged)"));
+ const thead=$("#thead"),tbody=$("#tbody");
+ $("#empty").hidden=stage>0;$("#flt").hidden=stage<2;$("#viz").innerHTML="";
+ if(stage==0){thead.innerHTML="";tbody.innerHTML="";$("#th").textContent="Weather records";renderQ();return}
+ if(stage==1){
+  $("#th").textContent="Raw weather report (unchecked)";
+  thead.innerHTML="<tr><th>#</th><th>Station</th><th>State</th><th>Date</th><th>Metric</th><th>Value</th><th>Source</th></tr>";
+  tbody.innerHTML=raw.map(r=>"<tr><td>"+r.id+"</td><td>"+esc(r.station||"—")+"</td><td>"+esc(r.state)+"</td><td>"+esc(r.date||"—")+"</td><td>"+r.metric+"</td><td>"+(r.value==null?"—":r.value+" "+M[r.metric].u)+"</td><td>"+r.source+"</td></tr>").join("");
+  renderQ();return;
+ }
+ $("#th").textContent="Verified dashboard";
+ const cnt={};TYPES.forEach(t=>cnt[t]=0);clean.filter(r=>fs=="All"||r.state==fs).forEach(r=>cnt[r.ev]++);
+ const mx=Math.max(1,...Object.values(cnt));
+ $("#viz").innerHTML='<div class="bars">'+TYPES.map(t=>'<button class="bar'+(ft==t?" on":"")+'" data-t="'+t+'" aria-pressed="'+(ft==t)+'"><span>'+t+'</span><i style="width:'+(cnt[t]/mx*100)+'%"></i><span>'+cnt[t]+'</span></button>').join("")+'</div>';
+ document.querySelectorAll(".bar").forEach(b=>b.onclick=()=>setType(ft==b.dataset.t?"All":b.dataset.t));
+ const sel=$("#st"),states=["All",...new Set(clean.map(r=>r.state))].sort();
+ sel.innerHTML=states.map(s=>'<option'+(s==fs?" selected":"")+'>'+s+'</option>').join("");
+ const rows=clean.filter(r=>(ft=="All"||r.ev==ft)&&(fs=="All"||r.state==fs));
+ $("#cnt").textContent=rows.length+" of "+clean.length+" clean records"+(ft!="All"?" · "+ft:"");
+ thead.innerHTML="<tr><th>#</th><th>Station</th><th>State</th><th>Date</th><th>Reading</th><th>Event</th><th>Source</th></tr>";
+ tbody.innerHTML=rows.map(r=>"<tr"+(r.manual?' class="flag"':"")+"><td>"+r.id+"</td><td>"+esc(r.station)+"</td><td>"+esc(r.state)+"</td><td>"+r.date+"</td><td>"+r.metric+" "+r.value+" "+M[r.metric].u+"</td><td><span class='chip"+(r.ev=="Normal"?" n":"")+"'>"+r.ev+"</span></td><td>"+r.source+(r.manual?" (override)":"")+"</td></tr>").join("")||'<tr><td colspan="7" class="empty">No records match these filters.</td></tr>';
+ renderQ();
+}
+function renderQ(){
+ const q=$("#q");
+ if(stage<2){q.innerHTML='<div class="empty">Nothing flagged yet. Run processing first.</div>';return}
+ q.innerHTML=queue.map((x,i)=>'<div class="qi '+x.st+'"><b>#'+x.r.id+"</b> "+esc(x.r.station||"(no station)")+" · "+x.r.metric+" · "+x.r.source+'<div class="w">'+esc(x.why)+"</div>"+
+  (x.st=="pending"?'<div class="a"><button data-i="'+i+'" data-a="ok">Approve removal</button>'+(x.kind=="dup"?'<button data-i="'+i+'" data-a="no">Restore</button>':"")+"</div>":'<div class="note">'+(x.st=="removed"?"Removal approved":"Restored by admin")+"</div>")+"</div>").join("");
+ q.querySelectorAll("button").forEach(b=>b.onclick=()=>act(+b.dataset.i,b.dataset.a));
+}
+$("#b1").onclick=load;$("#b2").onclick=runPipe;$("#breset").onclick=()=>{stopAuto();reset()};
+$("#st").onchange=e=>setState(e.target.value);
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function cap(t){const c=$("#cap");c.textContent=t||"";c.classList.toggle("on",!!t)}
+function stopAuto(){token++;cap("");$("#bstop").hidden=true;$("#bauto").disabled=false}
+$("#bstop").onclick=stopAuto;
+async function auto(){
+ const my=++token;reset();$("#bauto").disabled=true;$("#bstop").hidden=false;
+ const S=[
+  [()=>{},"Prototype v0.1 of the National Weather Big Data Analytics Platform, by Team Dev-orbit. We will load sample data, validate it and remove duplicates.",9000],
+  [load,"Step 1. Loading the sample report: raw records from three mock feeds, with duplicates and invalid entries seeded in.",13000],
+  [runPipe,"Step 2. The pipeline verifies every record, removes duplicates and classifies weather events. Counts and processing time are logged.",15000],
+  [()=>setType("Heatwave"),"Filtering the dashboard by event type: heatwaves.",9000],
+  [()=>setType("Flood"),"Now floods.",7000],
+  [()=>{setType("All");setState("Tamil Nadu")},"Filtering by state: Tamil Nadu.",8000],
+  [()=>{setState("All");$("#qcard").scrollIntoView({behavior:"smooth",block:"center"})},"Flagged records land in the admin review queue, each with the reason it was flagged.",9000],
+  [()=>act(queue.findIndex(x=>x.kind=="bad"),"ok"),"The admin approves removal of an invalid record.",8000],
+  [()=>act(queue.findIndex(x=>x.kind=="dup"&&x.st=="pending"),"no"),"Or restores a duplicate after checking it. Nothing is deleted silently.",9000],
+  [()=>window.scrollTo({top:0,behavior:"smooth"}),"Limits: sample data only, and this supports analysis, not forecasting. The formal 20-case test is still pending.",11000]
+ ];
+ for(const [fn,c,h] of S){if(my!=token)return;fn();cap(c);await sleep(h)}
+ if(my==token)stopAuto();
+}
+$("#bauto").onclick=auto;
+render();
+</script>
+</body>
+</html>
